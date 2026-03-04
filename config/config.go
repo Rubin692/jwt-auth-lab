@@ -1,4 +1,3 @@
-cat > config/config.go << 'EOF'
 package config
 
 import (
