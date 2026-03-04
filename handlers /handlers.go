@@ -11,7 +11,6 @@ import (
     "jwt-auth-service/middleware"
     "jwt-auth-service/models"
 )
-
 var logger *log.Logger
 var logFile *os.File
 
