@@ -2,7 +2,6 @@ package handlers
 
 import (
     "encoding/json"
-     // "fmt"   // временно закомментировали
     "io"
     "log"
     "net/http"
