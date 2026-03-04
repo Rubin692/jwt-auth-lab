@@ -4,7 +4,6 @@ import (
     "time"
     "github.com/golang-jwt/jwt/v5"
 )
-
 type Client struct {
     ID           string   `json:"id"`
     Name         string   `json:"name"`
