@@ -128,4 +128,3 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
     http.ServeFile(w, r, "logs/app.log")
 }
-EOF
