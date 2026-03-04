@@ -1,3 +1,4 @@
+cat > config/config.go << 'EOF'
 package config
 
 import (
@@ -16,10 +17,9 @@ type Config struct {
 var AppConfig Config
 
 func LoadConfig() error {
-    // Default configuration
     defaultConfig := Config{
         ServerPort: "8080",
-        TargetAPI:  "https://jsonplaceholder.typicode.com", // Test API
+        TargetAPI:  "https://jsonplaceholder.typicode.com",
         Clients: []models.Client{
             {
                 ID:            "client1",
@@ -40,7 +40,6 @@ func LoadConfig() error {
         },
     }
 
-    // Try to read config file
     file, err := os.ReadFile("config.json")
     if err != nil {
         fmt.Println("Config file not found, using default configuration")
@@ -56,7 +55,6 @@ func LoadConfig() error {
     return nil
 }
 
-// GetClientByID returns client by ID
 func GetClientByID(clientID string) *models.Client {
     for _, client := range AppConfig.Clients {
         if client.ID == clientID {
@@ -65,3 +63,4 @@ func GetClientByID(clientID string) *models.Client {
     }
     return nil
 }
+EOF
