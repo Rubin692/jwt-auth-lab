@@ -1,4 +1,3 @@
-cat > models/models.go << 'EOF'
 package models
 
 import (
