@@ -1,4 +1,3 @@
-cat > handlers/handlers.go << 'EOF'
 package handlers
 
 import (
