@@ -1,4 +1,3 @@
-cat > middleware/auth.go << 'EOF'
 package middleware
 
 import (
