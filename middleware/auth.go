@@ -1,3 +1,4 @@
+cat > middleware/auth.go << 'EOF'
 package middleware
 
 import (
@@ -10,7 +11,6 @@ import (
     "jwt-auth-service/models"
 )
 
-// GenerateToken generates JWT token for client
 func GenerateToken(client *models.Client) (string, time.Time, error) {
     expirationTime := time.Now().Add(time.Duration(client.TokenTTL) * time.Minute)
     
@@ -29,14 +29,12 @@ func GenerateToken(client *models.Client) (string, time.Time, error) {
     return tokenString, expirationTime, err
 }
 
-// ValidateToken validates JWT token
 func ValidateToken(tokenString string) (*models.TokenClaims, error) {
     token, err := jwt.ParseWithClaims(tokenString, &models.TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
         if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
             return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
         }
         
-        // Get client ID from claims to use correct secret
         if claims, ok := token.Claims.(*models.TokenClaims); ok {
             client := config.GetClientByID(claims.ClientID)
             if client != nil {
@@ -58,16 +56,13 @@ func ValidateToken(tokenString string) (*models.TokenClaims, error) {
     return nil, fmt.Errorf("invalid token")
 }
 
-// AuthMiddleware checks JWT token and permissions
 func AuthMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Skip auth for login endpoint
         if r.URL.Path == "/api/login" {
             next.ServeHTTP(w, r)
             return
         }
 
-        // Get token from header
         authHeader := r.Header.Get("Authorization")
         if authHeader == "" {
             http.Error(w, "Authorization header required", http.StatusUnauthorized)
@@ -80,21 +75,18 @@ func AuthMiddleware(next http.Handler) http.Handler {
             return
         }
 
-        // Validate token
         claims, err := ValidateToken(tokenParts[1])
         if err != nil {
             http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
             return
         }
 
-        // Check client permissions
         client := config.GetClientByID(claims.ClientID)
         if client == nil {
             http.Error(w, "Client not found", http.StatusForbidden)
             return
         }
 
-        // Check if method is allowed
         methodAllowed := false
         for _, method := range client.AllowedMethods {
             if method == r.Method {
@@ -108,7 +100,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
             return
         }
 
-        // Check if path is allowed
         pathAllowed := false
         for _, path := range client.AllowedPaths {
             if strings.HasPrefix(r.URL.Path, "/api/proxy"+path) {
@@ -122,9 +113,9 @@ func AuthMiddleware(next http.Handler) http.Handler {
             return
         }
 
-        // Add client ID to context
         r.Header.Set("X-Client-ID", claims.ClientID)
         
         next.ServeHTTP(w, r)
     })
 }
+EOF
