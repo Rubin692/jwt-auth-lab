@@ -1,5 +1,3 @@
-# Создаем main.go
-cat > main.go << 'EOF'
 package main
 
 import (
