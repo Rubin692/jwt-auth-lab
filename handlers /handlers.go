@@ -1,3 +1,4 @@
+cat > handlers/handlers.go << 'EOF'
 package handlers
 
 import (
@@ -17,13 +18,7 @@ var logFile *os.File
 
 func InitLogger() {
     var err error
-    
-    // Создаем папку logs, если её нет
-    err = os.MkdirAll("logs", 0755)
-    if err != nil {
-        log.Fatal("Failed to create logs directory:", err)
-    }
-    
+    os.MkdirAll("logs", 0755)
     logFile, err = os.OpenFile("logs/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
     if err != nil {
         log.Fatal("Failed to open log file:", err)
@@ -37,7 +32,6 @@ func CloseLogger() {
     }
 }
 
-// LoginHandler handles client authentication
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodPost {
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -51,14 +45,12 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Find client
     client := config.GetClientByID(loginReq.ClientID)
     if client == nil || client.SecretKey != loginReq.SecretKey {
         http.Error(w, "Invalid credentials", http.StatusUnauthorized)
         return
     }
 
-    // Generate token
     token, expiresAt, err := middleware.GenerateToken(client)
     if err != nil {
         http.Error(w, "Failed to generate token", http.StatusInternalServerError)
@@ -74,34 +66,28 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)
 
-    // Log login event
     logger.Printf("Client %s (%s) logged in, token expires at %s", 
         client.ID, client.Name, expiresAt.Format(time.RFC3339))
 }
 
-// ProxyHandler forwards requests to target API
 func ProxyHandler(w http.ResponseWriter, r *http.Request) {
     startTime := time.Now()
     clientID := r.Header.Get("X-Client-ID")
     
-    // Create target URL
     targetURL := config.AppConfig.TargetAPI + r.URL.Path[len("/api/proxy"):]
     if r.URL.RawQuery != "" {
         targetURL += "?" + r.URL.RawQuery
     }
 
-    // Create new request
     proxyReq, err := http.NewRequest(r.Method, targetURL, r.Body)
     if err != nil {
         http.Error(w, "Failed to create proxy request", http.StatusInternalServerError)
         return
     }
 
-    // Copy headers
     proxyReq.Header = r.Header.Clone()
     proxyReq.Header.Set("X-Forwarded-For", r.RemoteAddr)
 
-    // Send request
     client := &http.Client{}
     resp, err := client.Do(proxyReq)
     if err != nil {
@@ -110,12 +96,10 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
     }
     defer resp.Body.Close()
 
-    // Copy response
     w.WriteHeader(resp.StatusCode)
     body, _ := io.ReadAll(resp.Body)
     w.Write(body)
 
-    // Log the request
     duration := time.Since(startTime)
     logEntry := models.LogEntry{
         Timestamp:    time.Now(),
@@ -130,7 +114,6 @@ func ProxyHandler(w http.ResponseWriter, r *http.Request) {
     logger.Println(string(logJSON))
 }
 
-// HealthCheck handler
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(map[string]string{
@@ -139,7 +122,6 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
     })
 }
 
-// GetLogs handler (admin only - simplified for demo)
 func GetLogs(w http.ResponseWriter, r *http.Request) {
     if r.Header.Get("X-Admin-Token") != "admin-secret" {
         http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -148,3 +130,4 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
     http.ServeFile(w, r, "logs/app.log")
 }
+EOF
